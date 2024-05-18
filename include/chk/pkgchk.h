@@ -33,7 +33,7 @@ struct chunk {
 	char hash[SHA256_HEXLEN + 1];
 	size_t offset;
 	size_t size;
-}
+};
 
 
 /**

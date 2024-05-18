@@ -1,7 +1,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stddef.h>
+#include <string.h>
 #include <chk/pkgchk.h>
+#include <crypt/sha256.h>
+#include <tree/merkletree.h>
 
 // PART 1
 
