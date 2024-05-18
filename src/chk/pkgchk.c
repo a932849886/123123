@@ -18,7 +18,7 @@ struct bpkg_obj* bpkg_load(const char* path) {
         return NULL;
     }
 
-    struct bpkg_obj* obj = malloc(sizeof(struct bpkg_obj));
+    struct bpkg_obj* obj = (struct bpkg_obj*)malloc(sizeof(struct bpkg_obj));
     if (!obj) {
         fclose(file);
         return NULL;
@@ -26,8 +26,8 @@ struct bpkg_obj* bpkg_load(const char* path) {
     memset(obj, 0, sizeof(struct bpkg_obj));
 
     char buffer[1024];
+    char* pos;
     while (fgets(buffer, sizeof(buffer), file)) {
-        char *pos;
         if ((pos = strchr(buffer, '\n')) != NULL) {
             *pos = '\0';
         }
@@ -237,14 +237,16 @@ void bpkg_query_destroy(struct bpkg_query* qry) {
  * make sure it has been completely deallocated
  */
 void bpkg_obj_destroy(struct bpkg_obj* obj) {
-    free(obj->ident);
-    free(obj->filename);
-    for (size_t i = 0; i < obj->nhashes; i++) {
-        free(obj->hashes[i]);
+    if (obj) {
+        free(obj->ident);
+        free(obj->filename);
+        for (size_t i = 0; i < obj->nhashes; i++) {
+            free(obj->hashes[i]);
+        }
+        free(obj->hashes);
+        free(obj->chunks);
+        free(obj);
     }
-    free(obj->hashes);
-    free(obj->chunks);
-    free(obj);
 
 }
 
