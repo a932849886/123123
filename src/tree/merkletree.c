@@ -1,5 +1,5 @@
-#include "merkletree.h"
-#include "sha256.h"
+#include <tree/merkletree.h>
+#include <crypt/sha256.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>

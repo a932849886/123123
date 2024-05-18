@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stddef.h>
-#include "pkgchk.h"
+#include <chk/pkgchk.h>
 
 // PART 1
 
