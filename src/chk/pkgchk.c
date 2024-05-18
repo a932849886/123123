@@ -237,7 +237,7 @@ void bpkg_query_destroy(struct bpkg_query* qry) {
  * make sure it has been completely deallocated
  */
 void bpkg_obj_destroy(struct bpkg_obj* obj) {
-    free(obj->identifier);
+    free(obj->ident);
     free(obj->filename);
     for (size_t i = 0; i < obj->nhashes; i++) {
         free(obj->hashes[i]);
