@@ -38,7 +38,7 @@ struct merkle_tree_node* create_merkle_tree_node(const char *expected_hash, int 
     if (node) {
         memset(node, 0, sizeof(struct merkle_tree_node));
         strncpy(node->expected_hash, expected_hash, SHA256_HEXLEN);
-        node->expected_hash[SHA256_HEXLEN] = '\0'
+        node->expected_hash[SHA256_HEXLEN] = '\0';
         node->is_leaf = is_leaf;
     }
     return node;
@@ -47,10 +47,10 @@ struct merkle_tree_node* create_merkle_tree_node(const char *expected_hash, int 
 // Compute SHA256 hash
 void compute_SHA256_hash (const char *data, size_t len, char *output) {
     struct sha256_compute_data context;
-    sha256_compute_data_init($context);
-    sha256_update($context, (void*)data, len);
-    sha256_finalize($context, NULL);
-    sha256_output_hex($context, output);
+    sha256_compute_data_init(&context);
+    sha256_update(&context, (void*)data, len);
+    sha256_finalize(&context, NULL);
+    sha256_output_hex(&context, output);
 }
 
 // Insert node into the Merkle Tree
@@ -82,10 +82,10 @@ struct merkle_tree_node* insert_node(struct merkle_tree *tree, struct merkle_tre
 
 // Compute hash for nodes not leaf
 void compute_hash_not_leaf (struct merkle_tree_node *node) {
-    if (node->leaf && node->right) {
+    if (node->left && node->right) {
         char added_hash[2 * SHA256_HEXLEN + 1];
         snprintf(added_hash, sizeof(added_hash), "%s%s", node->left->computed_hash, node->right->computed_hash);
-        compute_SHA256_has(added_hash, strlen(added_hash), node->computed_hash);
+        compute_SHA256_hash(added_hash, strlen(added_hash), node->computed_hash);
     }
 }
 
