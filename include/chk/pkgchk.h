@@ -2,7 +2,7 @@
 #define PKGCHK_H
 
 #include <stddef.h>
-#include "merkletree.h"
+#include <tree/merkletree.h>
 
 
 /**
