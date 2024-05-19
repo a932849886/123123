@@ -59,16 +59,6 @@ struct bpkg_obj* bpkg_load(const char* path) {
                     }
                     if (buffer[0] != '\0'){
                         obj->hashes[i] = strdup(buffer);
-                        if (!obj->hashes[i]) {
-                            for (size_t j = 0; j < i; j++) {
-                                free(obj->hashes[j]);
-                            }
-                            free(obj->hashes);
-                            free(obj);
-                            fclose(file);
-                            return NULL;
-                        }
-                        break;
                     }
                     
                 }
@@ -86,7 +76,6 @@ struct bpkg_obj* bpkg_load(const char* path) {
                     }
                     if (buffer[0] != '\0'){
                         sscanf(buffer, "%64[^,],%zu,%zu", obj->chunks[i].hash, &obj->chunks[i].offset, &obj->chunks[i].size);
-                        break;
                     }
                 }
             }
