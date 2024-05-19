@@ -32,7 +32,7 @@ struct bpkg_obj* bpkg_load(const char* path) {
             *pos = '\0';
         }
 
-        if (strncmp(buffer, "chunks:", 7) == 0 || strcmp(buffer, "hashes:", 7) == 0) {
+        if (strncmp(buffer, "chunks:", 7) == 0 || strncmp(buffer, "hashes:", 7) == 0) {
             continue;
         }
 
