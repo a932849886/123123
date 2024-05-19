@@ -54,12 +54,13 @@ struct bpkg_obj* bpkg_load(const char* path) {
                     if ((pos = strchr(buffer, '\n')) != NULL) {
                         *pos = '\0';
                     }
+                    if (strncmp(buffer, "chunks:", 7) == 0 || strncmp(buffer, "hashes:", 7) == 0) {
+                        continue;
+                    }
                     while (*buffer == '\t') {
                         memmove(buffer, buffer + 1, strlen(buffer));
                     }
-                    if (buffer[0] != '\0'){
-                        obj->hashes[i] = strdup(buffer);
-                    }
+                    obj->hashes[i] = strdup(buffer);
                     
                 }
             }
@@ -74,9 +75,7 @@ struct bpkg_obj* bpkg_load(const char* path) {
                     while (*buffer == '\t') {
                         memmove(buffer, buffer + 1, strlen(buffer));
                     }
-                    if (buffer[0] != '\0'){
-                        sscanf(buffer, "%64[^,],%zu,%zu", obj->chunks[i].hash, &obj->chunks[i].offset, &obj->chunks[i].size);
-                    }
+                    sscanf(buffer, "%64[^,],%zu,%zu", obj->chunks[i].hash, &obj->chunks[i].offset, &obj->chunks[i].size);
                 }
             }
         }
@@ -108,7 +107,11 @@ struct bpkg_query bpkg_file_check(struct bpkg_obj* bpkg) {
         fclose(file);
         strcpy(result.hashes[0], "File Exists");
     } else {
-        strcpy(result.hashes[0], "File not Exist");
+        file = fopen(bpkg->filename, "w");
+        if (file) {
+            fclose(file);
+            strcpy(result.hashes[0], "File Created");
+        }
     }
 
     return result;
