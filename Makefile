@@ -38,6 +38,6 @@ p2tests:
 	bash p2test.sh
 
 clean:
-	rm -f objs/* pkgchecker btide *.o file1.out file4.out
+	rm -f objs/* pkgchecker btide *.o file1.out file4.out pkgmain
     
 
