@@ -123,14 +123,11 @@ struct bpkg_query bpkg_file_check(struct bpkg_obj* bpkg) {
  */
 struct bpkg_query bpkg_get_all_hashes(struct bpkg_obj* bpkg) {
     struct bpkg_query qry = { 0 };
-    qry.len = bpkg->nhashes + bpkg->nchunks;
+    qry.len = bpkg->nhashes;
     qry.hashes = malloc(qry.len * sizeof(char*));
 
-    for (size_t i = 0; i < bpkg->nhashes; i++) {
+    for (size_t i = 0; i < qry.len; i++) {
         qry.hashes[i] = strdup(bpkg->hashes[i]);
-    }
-    for (size_t i = 0; i < bpkg->nchunks; i++) {
-        qry.hashes[bpkg->nhashes + i] = strdup(bpkg->chunks[i].hash);
     }
     
     return qry;
