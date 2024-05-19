@@ -126,7 +126,7 @@ struct bpkg_query bpkg_get_all_hashes(struct bpkg_obj* bpkg) {
     qry.len = bpkg->nhashes;
     qry.hashes = malloc(qry.len * sizeof(char*));
 
-    for (size_t i = 0; i < qry.len; i++) {
+    for (size_t i = 1; i < qry.len; i++) {
         qry.hashes[i] = strdup(bpkg->hashes[i]);
     }
     
@@ -218,7 +218,7 @@ struct bpkg_query bpkg_get_all_chunk_hashes_from_hash(struct bpkg_obj* bpkg,
 
     for (size_t i = 0; i < bpkg->nchunks; i++) {
         if (strcmp(bpkg->chunks[i].hash, hash) == 0) {
-            qry.len = 1;
+            qry.len++;
             qry.hashes = malloc(sizeof(char*));
             qry.hashes[0] = strdup(bpkg->chunks[i].hash);
             break;
