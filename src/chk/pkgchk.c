@@ -32,6 +32,14 @@ struct bpkg_obj* bpkg_load(const char* path) {
             *pos = '\0';
         }
 
+        if (strncmp(buffer, "chunks:", 7) == 0 || strcmp(buffer, "hashes:", 7) == 0) {
+            continue;
+        }
+
+        while (*buffer == ' ') {
+            memmove(buffer, buffer + 1, strlen(buffer));
+        }
+
         if (strncmp(buffer, "ident:", 6) == 0) {
             obj->ident = strdup(buffer + 6);
         } else if (strncmp(buffer, "filename:", 9) == 0) {
@@ -46,6 +54,9 @@ struct bpkg_obj* bpkg_load(const char* path) {
                     if ((pos = strchr(buffer, '\n')) != NULL) {
                         *pos = '\0';
                     }
+                    while (*buffer == ' ') {
+                        memmove(buffer, buffer + 1, strlen(buffer));
+                    }
                     obj->hashes[i] = strdup(buffer);
                 }
             }
@@ -56,6 +67,9 @@ struct bpkg_obj* bpkg_load(const char* path) {
                 if (fgets(buffer, sizeof(buffer), file)) {
                     if ((pos = strchr(buffer, '\n')) != NULL) {
                         *pos = '\0';
+                    }
+                    while (*buffer == ' ') {
+                        memmove(buffer, buffer + 1, strlen(buffer));
                     }
                     sscanf(buffer, "%64[^,],%zu,%zu", obj->chunks[i].hash, &obj->chunks[i].offset, &obj->chunks[i].size);
                 }
