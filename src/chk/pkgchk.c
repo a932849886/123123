@@ -54,7 +54,7 @@ struct bpkg_obj* bpkg_load(const char* path) {
                     if ((pos = strchr(buffer, '\n')) != NULL) {
                         *pos = '\0';
                     }
-                    while (*buffer == ' ') {
+                    while (*buffer == '\t') {
                         memmove(buffer, buffer + 1, strlen(buffer));
                     }
                     obj->hashes[i] = strdup(buffer);
@@ -68,7 +68,7 @@ struct bpkg_obj* bpkg_load(const char* path) {
                     if ((pos = strchr(buffer, '\n')) != NULL) {
                         *pos = '\0';
                     }
-                    while (*buffer == ' ') {
+                    while (*buffer == '\t') {
                         memmove(buffer, buffer + 1, strlen(buffer));
                     }
                     sscanf(buffer, "%64[^,],%zu,%zu", obj->chunks[i].hash, &obj->chunks[i].offset, &obj->chunks[i].size);
