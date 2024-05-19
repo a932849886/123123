@@ -57,7 +57,20 @@ struct bpkg_obj* bpkg_load(const char* path) {
                     while (*buffer == '\t') {
                         memmove(buffer, buffer + 1, strlen(buffer));
                     }
-                    obj->hashes[i] = strdup(buffer);
+                    if (buffer[0] != '\0'){
+                        obj->hashes[i] = strdup(buffer);
+                        if (!obj->hashes[i]) {
+                            for (size_t j = 0; j < i; j++) {
+                                free(obj->hashes[j]);
+                            }
+                            free(obj->hashes);
+                            free(obj);
+                            fclose(file);
+                            return NULL;
+                        }
+                        break;
+                    }
+                    
                 }
             }
         } else if (strncmp(buffer, "nchunks:", 8) == 0) {
@@ -71,7 +84,10 @@ struct bpkg_obj* bpkg_load(const char* path) {
                     while (*buffer == '\t') {
                         memmove(buffer, buffer + 1, strlen(buffer));
                     }
-                    sscanf(buffer, "%64[^,],%zu,%zu", obj->chunks[i].hash, &obj->chunks[i].offset, &obj->chunks[i].size);
+                    if (buffer[0] != '\0'){
+                        sscanf(buffer, "%64[^,],%zu,%zu", obj->chunks[i].hash, &obj->chunks[i].offset, &obj->chunks[i].size);
+                        break;
+                    }
                 }
             }
         }
@@ -119,9 +135,25 @@ struct bpkg_query bpkg_get_all_hashes(struct bpkg_obj* bpkg) {
     struct bpkg_query qry = { 0 };
     qry.len = bpkg->nhashes;
     qry.hashes = malloc(qry.len * sizeof(char*));
+    if (!qry.hashes) {
+        return qry;
+    }
 
     for (size_t i = 0; i < qry.len; i++) {
-        qry.hashes[i] = strdup(bpkg->hashes[i]);
+        if (bpkg->hashes[i]) {
+            qry.hashes[i] = strdup(bpkg->hashes[i]);
+            if (!qry.hashes[i]) {
+                for (size_t j = 0; j < i; j++) {
+                    free(qry.hashes[j]);
+                }
+                free(qry.hashes);
+                qry.hashes = NULL;
+                qry.len = 0;
+                return qry;
+            }
+        } else {
+            qry.hashes[i] = NULL;
+        }
     }
     
     return qry;
