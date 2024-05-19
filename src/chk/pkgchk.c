@@ -25,15 +25,20 @@ struct bpkg_obj* bpkg_load(const char* path) {
     }
     memset(obj, 0, sizeof(struct bpkg_obj));
 
+    struct merkle_tree* tree = initializtion_merkle_tree();
+    if (!tree) {
+        free(obj);
+        fclose(file);
+        return NULL;
+    }
+
+    obj->tree = tree;
+
     char buffer[1024];
     char* pos;
     while (fgets(buffer, sizeof(buffer), file)) {
         if ((pos = strchr(buffer, '\n')) != NULL) {
             *pos = '\0';
-        }
-
-        if (strncmp(buffer, "chunks:", 7) == 0 || strncmp(buffer, "hashes:", 7) == 0) {
-            continue;
         }
 
         while (*buffer == ' ') {
@@ -49,24 +54,26 @@ struct bpkg_obj* bpkg_load(const char* path) {
         } else if (strncmp(buffer, "nhashes:", 8) == 0) {
             obj->nhashes = strtoul(buffer + 8, NULL, 10);
             obj->hashes = malloc(obj->nhashes * sizeof(char*));
+            fgets(buffer, sizeof(buffer), file);
             for (size_t i = 0; i < obj->nhashes; i++) {
                 if (fgets(buffer, sizeof(buffer), file)) {
                     if ((pos = strchr(buffer, '\n')) != NULL) {
                         *pos = '\0';
                     }
-                    if (strncmp(buffer, "chunks:", 7) == 0 || strncmp(buffer, "hashes:", 7) == 0) {
-                        continue;
-                    }
                     while (*buffer == '\t') {
                         memmove(buffer, buffer + 1, strlen(buffer));
                     }
                     obj->hashes[i] = strdup(buffer);
+
+                    struct merkle_tree_node* node = create_merkle_tree_node(obj->hashes[i], 0);
+                    insert_node(tree, node);
                     
                 }
             }
         } else if (strncmp(buffer, "nchunks:", 8) == 0) {
             obj->nchunks = strtoul(buffer + 8, NULL, 10);
             obj->chunks = malloc(obj->nchunks * sizeof(struct chunk));
+            fgets(buffer, sizeof(buffer), file);
             for (size_t i = 0; i < obj->nchunks; i++) {
                 if (fgets(buffer, sizeof(buffer), file)) {
                     if ((pos = strchr(buffer, '\n')) != NULL) {
@@ -76,6 +83,9 @@ struct bpkg_obj* bpkg_load(const char* path) {
                         memmove(buffer, buffer + 1, strlen(buffer));
                     }
                     sscanf(buffer, "%64[^,],%zu,%zu", obj->chunks[i].hash, &obj->chunks[i].offset, &obj->chunks[i].size);
+
+                    struct merkle_tree_node* node = create_merkle_tree_node(obj->chunks[i].hash, 1);
+                    insert_node(tree, node);
                 }
             }
         }

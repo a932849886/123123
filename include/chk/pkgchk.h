@@ -26,6 +26,9 @@ struct bpkg_obj {
 	char** hashes;
 	size_t nchunks;
 	struct chunk* chunks;
+	struct bpkg_obj* left;
+	struct bpkg_obj* right;
+	struct merkle_tree* tree;
 
 };
 
