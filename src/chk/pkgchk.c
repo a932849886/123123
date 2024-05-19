@@ -33,13 +33,13 @@ struct bpkg_obj* bpkg_load(const char* path) {
         }
 
         if (strncmp(buffer, "ident:", 6) == 0) {
-            obj->ident = strdup(buffer + 7);
+            obj->ident = strdup(buffer + 6);
         } else if (strncmp(buffer, "filename:", 9) == 0) {
-            obj->filename = strdup(buffer + 10);
+            obj->filename = strdup(buffer + 9);
         } else if (strncmp(buffer, "size:", 5) == 0){
-            obj->nhashes = strtoul(buffer + 6, NULL, 10);
+            obj->nhashes = strtoul(buffer + 5, NULL, 10);
         } else if (strncmp(buffer, "nhashes:", 8) == 0) {
-            obj->nhashes = strtoul(buffer + 9, NULL, 10);
+            obj->nhashes = strtoul(buffer + 8, NULL, 10);
             obj->hashes = malloc(obj->nhashes * sizeof(char*));
             for (size_t i = 0; i < obj->nhashes; i++) {
                 if (fgets(buffer, sizeof(buffer), file)) {
@@ -50,14 +50,14 @@ struct bpkg_obj* bpkg_load(const char* path) {
                 }
             }
         } else if (strncmp(buffer, "nchunks:", 8) == 0) {
-            obj->nchunks = strtoul(buffer + 9, NULL, 10);
+            obj->nchunks = strtoul(buffer + 8, NULL, 10);
             obj->chunks = malloc(obj->nchunks * sizeof(struct chunk));
             for (size_t i = 0; i < obj->nchunks; i++) {
                 if (fgets(buffer, sizeof(buffer), file)) {
                     if ((pos = strchr(buffer, '\n')) != NULL) {
                         *pos = '\0';
                     }
-                    sscanf(buffer, "%64s,%zu,%zu", obj->chunks[i].hash, &obj->chunks[i].offset, &obj->chunks[i].size);
+                    sscanf(buffer, "%64[^,],%zu,%zu", obj->chunks[i].hash, &obj->chunks[i].offset, &obj->chunks[i].size);
                 }
             }
         }
