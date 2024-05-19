@@ -49,6 +49,11 @@ struct bpkg_obj* bpkg_load(const char* path) {
         } else if (strncmp(buffer, "nhashes:", 8) == 0) {
             obj->nhashes = strtoul(buffer + 8, NULL, 10);
             obj->hashes = malloc(obj->nhashes * sizeof(char*));
+            if (!obj->hashes) {
+                free(obj);
+                fclose(file);
+                return NULL;
+            }
             for (size_t i = 0; i < obj->nhashes; i++) {
                 if (fgets(buffer, sizeof(buffer), file)) {
                     if ((pos = strchr(buffer, '\n')) != NULL) {
@@ -57,7 +62,19 @@ struct bpkg_obj* bpkg_load(const char* path) {
                     while (*buffer == ' ') {
                         memmove(buffer, buffer + 1, strlen(buffer));
                     }
-                    obj->hashes[i] = strdup(buffer);
+                    if (buffer[0] != '\0') {
+                        obj->hashes[i] = strdup(buffer);
+                        if (!obj->hashes[i]) {
+                            for (size_t j = 0; j < i; j++) {
+                                free(obj->hashes[j]);
+                            }
+                            free(obj->hashes);
+                            free(obj);
+                            fclose(file);
+                            return NULL;
+                        }
+                    }
+                    
                 }
             }
         } else if (strncmp(buffer, "nchunks:", 8) == 0) {
