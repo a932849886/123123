@@ -45,7 +45,7 @@ struct bpkg_obj* bpkg_load(const char* path) {
         } else if (strncmp(buffer, "filename:", 9) == 0) {
             obj->filename = strdup(buffer + 9);
         } else if (strncmp(buffer, "size:", 5) == 0){
-            obj->nhashes = strtoul(buffer + 5, NULL, 10);
+            obj->size = strtoul(buffer + 5, NULL, 10);
         } else if (strncmp(buffer, "nhashes:", 8) == 0) {
             obj->nhashes = strtoul(buffer + 8, NULL, 10);
             obj->hashes = malloc(obj->nhashes * sizeof(char*));
@@ -103,13 +103,7 @@ struct bpkg_query bpkg_file_check(struct bpkg_obj* bpkg) {
         fclose(file);
         strcpy(result.hashes[0], "File Exists");
     } else {
-        file = fopen(bpkg->filename, "w");
-        if (file) {
-            fclose(file);
-            strcpy(result.hashes[0], "File Created");
-        } else {
-            strcpy(result.hashes[0], "File Error");
-        }
+        strcpy(result.hashes[0], "File not Exist");
     }
 
     return result;
@@ -126,7 +120,7 @@ struct bpkg_query bpkg_get_all_hashes(struct bpkg_obj* bpkg) {
     qry.len = bpkg->nhashes;
     qry.hashes = malloc(qry.len * sizeof(char*));
 
-    for (size_t i = 1; i < qry.len; i++) {
+    for (size_t i = 0; i < qry.len; i++) {
         qry.hashes[i] = strdup(bpkg->hashes[i]);
     }
     
