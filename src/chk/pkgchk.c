@@ -93,8 +93,7 @@ struct bpkg_obj* bpkg_load(const char* path) {
         } else if (strncmp(buffer, "nhashes:", 8) == 0) {
             obj->nhashes = strtoul(buffer + 8, NULL, 10);
             obj->hashes = malloc(obj->nhashes * sizeof(char*));
-            nodes = malloc(obj->nhashes * sizeof(struct node_level));
-            if (!obj->hashes || !nodes) {
+            if (!obj->hashes) {
                 free(obj->ident);
                 free(obj->filename);
                 free_merkle_tree(tree);
@@ -103,6 +102,16 @@ struct bpkg_obj* bpkg_load(const char* path) {
                 return NULL;
             }
             fgets(buffer, sizeof(buffer), file);
+            nodes = malloc(obj->nhashes * sizeof(struct node_level));
+            if (!nodes) {
+                free(obj->hashes);
+                free(obj->ident);
+                free(obj->filename);
+                free_merkle_tree(tree);
+                free(obj);
+                fclose(file);
+                return NULL;
+            }
             level = 0;
             for (size_t i = 0; i < obj->nhashes; i++) {
                 if (fgets(buffer, sizeof(buffer), file)) {
@@ -129,6 +138,21 @@ struct bpkg_obj* bpkg_load(const char* path) {
             }
         } else if (strncmp(buffer, "nchunks:", 8) == 0) {
             obj->nchunks = strtoul(buffer + 8, NULL, 10);
+            struct node_level* new_nodes = realloc(nodes, (obj->nhashes + obj->nchunks) * sizeof(struct node_level));
+            if (!new_nodes) {
+                for (size_t i = 0; i < obj->nhashes; i++) {
+                    free(obj->hashes[i]);
+                }
+                free(obj->hashes);
+                free(obj->ident);
+                free(obj->filename);
+                free_merkle_tree(tree);
+                free(nodes);
+                free(obj);
+                fclose(file);
+                return NULL;
+            }
+            nodes = new_nodes;
             obj->chunks = malloc(obj->nchunks * sizeof(struct chunk));
             if (!obj->chunks) {
                 for (size_t i = 0; i < obj->nhashes; i++) {
