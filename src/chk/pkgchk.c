@@ -19,7 +19,7 @@ void connect_nodes(struct node_level* nodes, size_t index, struct merkle_tree_no
 
     if (index > 0) {
         size_t parent_index = (index - 1) / 2;
-        if (nodes[parent_index].level = level - 1) {
+        if (nodes[parent_index].level == level - 1) {
             if ((index - 1) % 2 == 0) {
                 nodes[parent_index].node->left = node;
             } else {
@@ -59,6 +59,8 @@ struct bpkg_obj* bpkg_load(const char* path) {
     size_t hash_index = 0, chunk_index = 0;
     struct node_level* nodes = NULL;
     int level = 0;
+    int nodes_current_level = 1;
+    int nodes_proccessed_level = 0;
 
     while (fgets(buffer, sizeof(buffer), file)) {
         if ((pos = strchr(buffer, '\n')) != NULL) {
@@ -117,8 +119,11 @@ struct bpkg_obj* bpkg_load(const char* path) {
                     insert_node(tree, node);
                     connect_nodes(nodes, i, node, level);
                     
-                    if ((i + 1) && !(i & i + 1)) {
+                    nodes_proccessed_level++;
+                    if (nodes_proccessed_level == nodes_current_level) {
                         level++;
+                        nodes_current_level *= 2;
+                        nodes_proccessed_level = 0;
                     }
                 }
             }
