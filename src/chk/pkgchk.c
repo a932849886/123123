@@ -248,27 +248,20 @@ struct bpkg_query bpkg_file_check(struct bpkg_obj* bpkg) {
  */
 struct bpkg_query bpkg_get_all_hashes(struct bpkg_obj* bpkg) {
     struct bpkg_query qry = { 0 };
-    qry.len = bpkg->nhashes;
+    qry.len = bpkg->nhashes + bpkg->nchunks;
     qry.hashes = malloc(qry.len * sizeof(char*));
     if (!qry.hashes) {
         return qry;
     }
 
-    for (size_t i = 0; i < qry.len; i++) {
-        if (bpkg->hashes[i]) {
-            qry.hashes[i] = strdup(bpkg->hashes[i]);
-            if (!qry.hashes[i]) {
-                for (size_t j = 0; j < i; j++) {
-                    free(qry.hashes[j]);
-                }
-                free(qry.hashes);
-                qry.hashes = NULL;
-                qry.len = 0;
-                return qry;
-            }
-        } else {
-            qry.hashes[i] = NULL;
-        }
+    size_t index = 0;
+
+    for (size_t i = 0; i < bpkg->nhashes; i++) {
+        qry.hashes[index++] = strdup(bpkg->hashes[i]);
+    }
+
+    for (size_t i = 0; i < bpkg->nchunks; i++) {
+        qry.hashes[index++] = strdup(bpkg->chunks[i].hash);
     }
     
     return qry;
