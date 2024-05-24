@@ -332,6 +332,32 @@ void compute_non_leaf_hash(const char* left, const char* right, char* output) {
     compute_SHA256_hash(combined, strlen(combined), output);
 }
 
+int check_node_completion(struct bpkg_obj* bpkg, size_t node_idx, int* completed_chunks, struct bpkg_query* result) {
+    if (node_idx >= bpkg->nhashes) {
+        size_t chunk_idx = node_idx - bpkg->nhashes;
+        return completed_chunks[chunk_idx];
+    }
+
+    size_t left_idx = 2 * node_idx + 1;
+    size_t right_idx = 2 * node_idx + 2;
+
+    int left_complete = check_node_completion(bpkg, left_idx, completed_chunks, result);
+    int right_complete = check_node_completion(bpkg, right_idx, completed_chunks, result);
+
+    if (left_complete && right_complete) {
+        result->hashes[result->len++] = strdup(bpkg->hashes[node_idx]);
+        return 1;
+    } else {
+        if (left_complete) {
+            result->hashes[result->len++] = strdup(bpkg->hashes[left_idx]);
+        }
+        if (right_complete) {
+            result->hashes[result->len++] = strdup(bpkg->hashes[right_idx]);
+        }
+        return 0;
+    }
+}
+
 /**
  * Gets only the required/min hashes to represent the current completion state
  * Return the smallest set of hashes of completed branches to represent
@@ -343,51 +369,22 @@ void compute_non_leaf_hash(const char* left, const char* right, char* output) {
  */
 struct bpkg_query bpkg_get_min_completed_hashes(struct bpkg_obj* bpkg) {
     struct bpkg_query qry = { 0 };
-    size_t numOfnodes = bpkg->nchunks + bpkg->nhashes;
-    qry.hashes = malloc(numOfnodes * sizeof(char*));
-    size_t min_hashes_count = 0;
+    qry.hashes = malloc((bpkg->nhashes + bpkg->nchunks) * sizeof(char*));
+    qry.len = 0;
 
     int* completed_chunks = calloc(bpkg->nchunks, sizeof(int));
     for (size_t i = 0; i < bpkg->nchunks; i++) {
-        struct chunk* chunk = &bpkg->chunks[i];
-        char* data = load_data_from_chunk(chunk, bpkg->filename);
-        if (data && validate_chunk(chunk, data, chunk->size)) {
+        struct chunk* chk = &bpkg->chunks[i];
+        char* data = load_data_from_chunk(chk, bpkg->filename);
+        if (data && validate_chunk(chk, data, chk->size)) {
             completed_chunks[i] = 1;
         }
-        free(data);
+        free(data); // Free loaded data after validation
     }
 
-    for (size_t i = 0; i < bpkg->nhashes; i++) {
-        char left_hash[SHA256_HEXLEN + 1];
-        char right_hash[SHA256_HEXLEN + 1];
-        char computed_hash[SHA256_HEXLEN + 1];
+    check_node_completion(bpkg, 0, completed_chunks, &qry);
 
-        size_t left_index = 2 * i + 1;
-        size_t right_index = 2 * i + 2;
-
-        if (left_index < bpkg->nchunks && right_index < bpkg->nchunks &&
-            completed_chunks[left_index] && completed_chunks[right_index]) {
-            strncpy(left_hash, bpkg->chunks[left_index].hash, SHA256_HEXLEN);
-            strncpy(right_hash, bpkg->chunks[right_index].hash, SHA256_HEXLEN);
-            compute_non_leaf_hash(left_hash, right_hash, computed_hash);
-
-            if (strncmp(bpkg->hashes[i], computed_hash, SHA256_HEXLEN) == 0) {
-                qry.hashes[min_hashes_count++] = strdup(bpkg->hashes[i]);
-            }
-        }
-
-    }
-
-    for (size_t i = 0; i < bpkg->nchunks; i++) {
-        if (completed_chunks[i]) {
-            qry.hashes[min_hashes_count++] = strdup(bpkg->chunks[i].hash);
-        }
-    }
-
-    qry.len = min_hashes_count;
-    qry.hashes = realloc(qry.hashes, qry.len * sizeof(char*));
     free(completed_chunks);
-
     return qry;
 }
 
