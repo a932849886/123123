@@ -333,6 +333,10 @@ void compute_non_leaf_hash(const char* left, const char* right, char* output) {
 }
 
 int check_node_completion(struct bpkg_obj* bpkg, size_t node_idx, int* completed_chunks, struct bpkg_query* result) {
+    if (node_idx >= bpkg->nhashes + bpkg->nchunks) {
+        return 0;
+    }
+
     if (node_idx >= bpkg->nhashes) {
         size_t chunk_idx = node_idx - bpkg->nhashes;
         return completed_chunks[chunk_idx];
@@ -341,17 +345,17 @@ int check_node_completion(struct bpkg_obj* bpkg, size_t node_idx, int* completed
     size_t left_idx = 2 * node_idx + 1;
     size_t right_idx = 2 * node_idx + 2;
 
-    int left_complete = check_node_completion(bpkg, left_idx, completed_chunks, result);
-    int right_complete = check_node_completion(bpkg, right_idx, completed_chunks, result);
+    int left_complete = (left_idx < bpkg->nhashes + bpkg->nchunks) ? check_node_completion(bpkg, left_idx, completed_chunks, result) : 0;
+    int right_complete = (right_idx < bpkg->nhashes + bpkg->nchunks) ? check_node_completion(bpkg, right_idx, completed_chunks, result) : 0;
 
     if (left_complete && right_complete) {
         result->hashes[result->len++] = strdup(bpkg->hashes[node_idx]);
         return 1;
     } else {
-        if (left_complete) {
+        if (left_complete && left_idx < bpkg->nhashes) {
             result->hashes[result->len++] = strdup(bpkg->hashes[left_idx]);
         }
-        if (right_complete) {
+        if (right_complete && right_idx < bpkg->nhashes) {
             result->hashes[result->len++] = strdup(bpkg->hashes[right_idx]);
         }
         return 0;
