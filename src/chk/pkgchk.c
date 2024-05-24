@@ -267,6 +267,34 @@ struct bpkg_query bpkg_get_all_hashes(struct bpkg_obj* bpkg) {
     return qry;
 }
 
+
+int validate_chunk(struct chunk* chunk, const char* data, size_t data_len) {
+    char computed_hash[SHA256_HEXLEN + 1];
+    compute_SHA256_hash(data, data_len, computed_hash);
+    return strncmp(chunk->hash, computed_hash, SHA256_HEXLEN) == 0;
+
+};
+
+char* load_data_from_chunk(struct chunk* chunk, const char* path) {
+    FILE* file = fopen(path, "rb");
+    if (!file) {
+        return NULL;
+    }
+
+    char* data = (char*)malloc(chunk->size);
+    if (!data) {
+        fclose(file);
+        return NULL;
+    }
+
+    fseek(file, chunk->offset, SEEK_SET);
+    fread(data, 1, chunk->size, file);
+    fclose(file);
+
+    return data;
+
+};
+
 /**
  * Retrieves all completed chunks of a package object
  * @param bpkg, constructed bpkg object
@@ -279,9 +307,17 @@ struct bpkg_query bpkg_get_completed_chunks(struct bpkg_obj* bpkg) {
     qry.hashes = malloc(qry.len * sizeof(char*));
 
     for (size_t i = 0; i < bpkg->nchunks; i++) {
-        qry.hashes[i] = strdup(bpkg->chunks[i].hash);
+        struct chunk* chunk= &bpkg->chunks[i];
+        char* data = load_data_from_chunk(chunk, bpkg->filename);
+        if (data && validate_chunk(chunk, data, chunk->size)) {
+            qry.hashes[qry.len++] = strdup(chunk->hash);
+            printf(chunk->hash);
+        }
+        free(data);
+
     }
 
+    qry.hashes = realloc(qry.hashes, qry.len * sizeof(char*));
     return qry;
 }
 
