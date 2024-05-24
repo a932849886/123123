@@ -354,9 +354,14 @@ int check_node_completion(struct bpkg_obj* bpkg, size_t node_idx, int* completed
     } else {
         if (left_complete && left_idx < bpkg->nhashes) {
             result->hashes[result->len++] = strdup(bpkg->hashes[left_idx]);
+        } else if (left_complete && left_idx >= bpkg->nhashes) {
+            result->hashes[result->len++] = strdup(bpkg->chunks[left_idx - bpkg->nhashes].hash);
         }
+
         if (right_complete && right_idx < bpkg->nhashes) {
             result->hashes[result->len++] = strdup(bpkg->hashes[right_idx]);
+        } else if (right_complete && right_idx >= bpkg->nhashes) {
+            result->hashes[result->len++] = strdup(bpkg->chunks[right_idx - bpkg->nhashes].hash);
         }
         return 0;
     }
