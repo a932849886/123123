@@ -311,7 +311,6 @@ struct bpkg_query bpkg_get_completed_chunks(struct bpkg_obj* bpkg) {
         char* data = load_data_from_chunk(chunk, bpkg->filename);
         if (data && validate_chunk(chunk, data, chunk->size)) {
             qry.hashes[qry.len++] = strdup(chunk->hash);
-            printf(chunk->hash);
         }
         free(data);
 
