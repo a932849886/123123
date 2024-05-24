@@ -352,17 +352,22 @@ int check_node_completion(struct bpkg_obj* bpkg, size_t node_idx, int* completed
         result->hashes[result->len++] = strdup(bpkg->hashes[node_idx]);
         return 1;
     } else {
-        if (left_complete && left_idx < bpkg->nhashes) {
-            result->hashes[result->len++] = strdup(bpkg->hashes[left_idx]);
-        } else if (left_complete && left_idx >= bpkg->nhashes) {
-            result->hashes[result->len++] = strdup(bpkg->chunks[left_idx - bpkg->nhashes].hash);
+        if (left_complete) {
+            if (left_idx < bpkg->nhashes && !bpkg->tree->root->left->is_leaf) {
+                result->hashes[result->len++] = strdup(bpkg->hashes[left_idx]);
+            } else {
+                result->hashes[result->len++] = strdup(bpkg->chunks[left_idx - bpkg->nhashes].hash);
+            }
         }
 
-        if (right_complete && right_idx < bpkg->nhashes) {
-            result->hashes[result->len++] = strdup(bpkg->hashes[right_idx]);
-        } else if (right_complete && right_idx >= bpkg->nhashes) {
-            result->hashes[result->len++] = strdup(bpkg->chunks[right_idx - bpkg->nhashes].hash);
+        if (right_complete) {
+            if (right_idx < bpkg->nhashes && !bpkg->tree->root->right->is_leaf) {
+                result->hashes[result->len++] = strdup(bpkg->hashes[right_idx]);
+            } else {
+                result->hashes[result->len++] = strdup(bpkg->chunks[right_idx - bpkg->nhashes].hash);
+            }
         }
+
         return 0;
     }
 }
@@ -388,7 +393,7 @@ struct bpkg_query bpkg_get_min_completed_hashes(struct bpkg_obj* bpkg) {
         if (data && validate_chunk(chk, data, chk->size)) {
             completed_chunks[i] = 1;
         }
-        free(data); // Free loaded data after validation
+        free(data);
     }
 
     check_node_completion(bpkg, 0, completed_chunks, &qry);
