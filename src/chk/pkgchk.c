@@ -295,6 +295,8 @@ char* load_data_from_chunk(struct chunk* chunk, const char* path) {
 
 };
 
+
+
 /**
  * Retrieves all completed chunks of a package object
  * @param bpkg, constructed bpkg object
@@ -332,12 +334,27 @@ void compute_non_leaf_hash(const char* left, const char* right, char* output) {
     compute_SHA256_hash(combined, strlen(combined), output);
 }
 
+void free_bpkg_query(struct bpkg_query* qry) {
+    if (qry && qry->hashes) {
+        for (size_t i = 0; i < qry->len; i++) {
+            free(qry->hashes[i]);
+        }
+        free(qry->hashes);
+        qry->hashes = NULL;
+        qry->len = 0;
+    }
+}
+
 struct bpkg_query check_node_completion(struct bpkg_obj* bpkg, size_t node_idx, int* completed_chunks) {
     struct bpkg_query result = {0};
     result.hashes = malloc((bpkg->nhashes + bpkg->nchunks) * sizeof(char*));
+    if (!result.hashes) {
+        return result;
+    }
     result.len = 0;
 
     if (node_idx >= bpkg->nhashes + bpkg->nchunks) {
+        free(result.hashes);
         return result;
     }
 
@@ -346,34 +363,51 @@ struct bpkg_query check_node_completion(struct bpkg_obj* bpkg, size_t node_idx, 
         if (completed_chunks[chunk_idx]) {
             result.hashes[result.len++] = strdup(bpkg->chunks[chunk_idx].hash);
         }
+        if (result.len == 0) {
+            free(result.hashes);
+            result.hashes = NULL;
+        }
         return result;
     }
 
     size_t left_idx = 2 * node_idx + 1;
     size_t right_idx = 2 * node_idx + 2;
 
-    struct bpkg_query left_result = check_node_completion(bpkg, left_idx, completed_chunks);
-    struct bpkg_query right_result = check_node_completion(bpkg, right_idx, completed_chunks);
+    struct bpkg_query left_result = {0};
+    struct bpkg_query right_result = {0};
+
+    if (left_idx < bpkg->nhashes + bpkg->nchunks) {
+        left_result = check_node_completion(bpkg, left_idx, completed_chunks);
+    }
+    if (right_idx < bpkg->nhashes + bpkg->nchunks) {
+        right_result = check_node_completion(bpkg, right_idx, completed_chunks);
+    }
 
     int left_complete = (left_result.len == 1 && (left_idx >= bpkg->nhashes || !strcmp(bpkg->hashes[left_idx], left_result.hashes[0])));
     int right_complete = (right_result.len == 1 && (right_idx >= bpkg->nhashes || !strcmp(bpkg->hashes[right_idx], right_result.hashes[0])));
 
     if (left_complete && right_complete) {
         result.hashes[result.len++] = strdup(bpkg->hashes[node_idx]);
-        free(left_result.hashes);
-        free(right_result.hashes);
+        free_bpkg_query(&left_result);
+        free_bpkg_query(&right_result);
     } else if (left_complete) {
-        result.hashes[result.len++] = strdup(bpkg->hashes[left_idx]);
+        if (left_idx < bpkg->nhashes) {
+            result.hashes[result.len++] = strdup(bpkg->hashes[left_idx]);
+        }
         for (size_t i = 0; i < right_result.len; i++) {
             result.hashes[result.len++] = right_result.hashes[i];
         }
         free(right_result.hashes);
+        right_result.hashes = NULL;
     } else if (right_complete) {
-        result.hashes[result.len++] = strdup(bpkg->hashes[right_idx]);
+        if (right_idx < bpkg->nhashes) {
+            result.hashes[result.len++] = strdup(bpkg->hashes[right_idx]);
+        }
         for (size_t i = 0; i < left_result.len; i++) {
             result.hashes[result.len++] = left_result.hashes[i];
         }
         free(left_result.hashes);
+        left_result.hashes = NULL;
     } else {
         for (size_t i = 0; i < left_result.len; i++) {
             result.hashes[result.len++] = left_result.hashes[i];
@@ -381,6 +415,23 @@ struct bpkg_query check_node_completion(struct bpkg_obj* bpkg, size_t node_idx, 
         for (size_t i = 0; i < right_result.len; i++) {
             result.hashes[result.len++] = right_result.hashes[i];
         }
+        free(left_result.hashes);
+        free(right_result.hashes);
+        left_result.hashes = NULL;
+        right_result.hashes = NULL;
+    }
+
+    
+    if (left_result.hashes) {
+        free_bpkg_query(&left_result);
+    }
+    if (right_result.hashes) {
+        free_bpkg_query(&right_result);
+    }
+
+    if (result.len == 0) {
+        free(result.hashes);
+        result.hashes = NULL;
     }
 
     return result;
@@ -412,6 +463,27 @@ struct bpkg_query bpkg_get_min_completed_hashes(struct bpkg_obj* bpkg) {
 }
 
 
+
+
+
+
+void collect_chunk_hashes_from_node(struct bpkg_obj* bpkg, size_t node_idx, struct bpkg_query* result, int* completed_chunks) {
+    if (node_idx >= bpkg->nhashes + bpkg->nchunks) {
+        return;
+    }
+
+    if (node_idx >= bpkg->nhashes) {
+        size_t chunk_idx = node_idx - bpkg->nhashes;
+        result->hashes[result->len++] = strdup(bpkg->chunks[chunk_idx].hash);
+        return;
+    }
+
+    size_t left_idx = 2 * node_idx + 1;
+    size_t right_idx = 2 * node_idx + 2;
+
+    collect_chunk_hashes_from_node(bpkg, left_idx, result);
+    collect_chunk_hashes_from_node(bpkg, right_idx, result);
+}
 /**
  * Retrieves all chunk hashes given a certain an ancestor hash (or itself)
  * Example: If the root hash was given, all chunk hashes will be outputted
@@ -428,15 +500,45 @@ struct bpkg_query bpkg_get_all_chunk_hashes_from_hash(struct bpkg_obj* bpkg,
     
     struct bpkg_query qry = { 0 };
     qry.len = 0;
-    qry.hashes = NULL;
+    qry.hashes = malloc(bpkg->nchunks * sizeof(char*));
 
-    for (size_t i = 0; i < bpkg->nchunks; i++) {
-        if (strcmp(bpkg->chunks[i].hash, hash) == 0) {
-            qry.len++;
-            qry.hashes = malloc(sizeof(char*));
-            qry.hashes[0] = strdup(bpkg->chunks[i].hash);
+    if (!qry.hashes) {
+        return qry;
+    }
+
+    size_t node_idx = 0;
+    int found = 0;
+
+    for (size_t i = 0; i < bpkg->nhashes; i++) {
+        if (strncmp(bpkg->hashes[i], hash, SHA256_HEXLEN) == 0) {
+            node_idx = i;
+            found = 1;
             break;
         }
+    }
+
+    if (!found) {
+        for (size_t i = 0; i < bpkg->nchunks; i++) {
+            if (strncmp(bpkg->chunks[i].hash, hash, SHA256_HEXLEN) == 0) {
+                qry.hashes[qry.len++] = strdup(bpkg->chunks[i].hash);
+                return qry;
+            }
+        }
+    }
+
+    if (found) {
+        collect_chunk_hashes_from_node(bpkg, node_idx, &qry);
+    }
+
+    if (qry.len > 0) {
+        qry.hashes = realloc(qry.hashes, qry.len * sizeof(char*));
+        if (!qry.hashes) {
+            free(qry.hashes);
+            exit();
+        }
+    } else {
+        free(qry.hashes);
+        qry.hashes = NULL;
     }
 
     return qry;
