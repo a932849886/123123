@@ -467,7 +467,7 @@ struct bpkg_query bpkg_get_min_completed_hashes(struct bpkg_obj* bpkg) {
 
 
 
-void collect_chunk_hashes_from_node(struct bpkg_obj* bpkg, size_t node_idx, struct bpkg_query* result, int* completed_chunks) {
+void collect_chunk_hashes_from_node(struct bpkg_obj* bpkg, size_t node_idx, struct bpkg_query* result) {
     if (node_idx >= bpkg->nhashes + bpkg->nchunks) {
         return;
     }
@@ -534,7 +534,6 @@ struct bpkg_query bpkg_get_all_chunk_hashes_from_hash(struct bpkg_obj* bpkg,
         qry.hashes = realloc(qry.hashes, qry.len * sizeof(char*));
         if (!qry.hashes) {
             free(qry.hashes);
-            exit();
         }
     } else {
         free(qry.hashes);
