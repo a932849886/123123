@@ -355,6 +355,7 @@ struct bpkg_query check_node_completion(struct bpkg_obj* bpkg, size_t node_idx, 
 
     if (node_idx >= bpkg->nhashes + bpkg->nchunks) {
         free(result.hashes);
+        result.hashes = NULL;
         return result;
     }
 
@@ -393,32 +394,28 @@ struct bpkg_query check_node_completion(struct bpkg_obj* bpkg, size_t node_idx, 
     } else {
         if (left_complete) {
             result.hashes[result.len++] = left_result.hashes[0];
-            free(left_result.hashes);
+            free(left_result.hashes[0]);
         } else {
             for (size_t i = 0; i < left_result.len; i++) {
                 result.hashes[result.len++] = left_result.hashes[i];
             }
-            free(left_result.hashes);
+            free(left_result.hashes[i]);
         }
 
         if (right_complete) {
             result.hashes[result.len++] = right_result.hashes[0];
-            free(right_result.hashes);
+            free(right_result.hashes[0]);
         } else {
             for (size_t i = 0; i < right_result.len; i++) {
                 result.hashes[result.len++] = right_result.hashes[i];
             }
-            free(right_result.hashes);
+            free(right_result.hashes[i]);
         }
     }
 
     
-    if (left_result.hashes) {
-        free_bpkg_query(&left_result);
-    }
-    if (right_result.hashes) {
-        free_bpkg_query(&right_result);
-    }
+    free_bpkg_query(&left_result);
+    free_bpkg_query(&right_result);
 
     if (result.len == 0) {
         free(result.hashes);
