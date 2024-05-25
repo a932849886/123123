@@ -345,6 +345,11 @@ void free_bpkg_query(struct bpkg_query* qry) {
     }
 }
 
+struct node_level {
+    struct merkle_tree_node* node;
+    int level;
+}
+
 struct bpkg_query check_node_completion(struct bpkg_obj* bpkg, size_t node_idx, int* completed_chunks) {
     struct bpkg_query result = {0};
     result.hashes = malloc((bpkg->nhashes + bpkg->nchunks) * sizeof(char*));
@@ -390,35 +395,26 @@ struct bpkg_query check_node_completion(struct bpkg_obj* bpkg, size_t node_idx, 
         result.hashes[result.len++] = strdup(bpkg->hashes[node_idx]);
         free_bpkg_query(&left_result);
         free_bpkg_query(&right_result);
-    } else if (left_complete) {
-        if (left_idx < bpkg->nhashes) {
-            result.hashes[result.len++] = strdup(bpkg->hashes[left_idx]);
-        }
-        for (size_t i = 0; i < right_result.len; i++) {
-            result.hashes[result.len++] = right_result.hashes[i];
-        }
-        free(right_result.hashes);
-        right_result.hashes = NULL;
-    } else if (right_complete) {
-        if (right_idx < bpkg->nhashes) {
-            result.hashes[result.len++] = strdup(bpkg->hashes[right_idx]);
-        }
-        for (size_t i = 0; i < left_result.len; i++) {
-            result.hashes[result.len++] = left_result.hashes[i];
-        }
-        free(left_result.hashes);
-        left_result.hashes = NULL;
     } else {
-        for (size_t i = 0; i < left_result.len; i++) {
-            result.hashes[result.len++] = left_result.hashes[i];
+        if (left_complete) {
+            result.hashes[result.len++] = left_result.hashes[0];
+            free(left_result.hashes);
+        } else {
+            for (size_t i = 0; i < left_result.len; i++) {
+                result.hashes[result.len++] = left_result.hashes[i];
+            }
+            free(left_result.hashes);
         }
-        for (size_t i = 0; i < right_result.len; i++) {
-            result.hashes[result.len++] = right_result.hashes[i];
+
+        if (right_complete) {
+            result.hashes[result.len++] = right_result.hashes[0];
+            free(right_result.hashes);
+        } else {
+            for (size_t i = 0; i < right_result.len; i++) {
+                result.hashes[result.len++] = right_result.hashes[i];
+            }
+            free(right_result.hashes);
         }
-        free(left_result.hashes);
-        free(right_result.hashes);
-        left_result.hashes = NULL;
-        right_result.hashes = NULL;
     }
 
     
