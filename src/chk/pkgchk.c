@@ -345,11 +345,6 @@ void free_bpkg_query(struct bpkg_query* qry) {
     }
 }
 
-struct node_level {
-    struct merkle_tree_node* node;
-    int level;
-}
-
 struct bpkg_query check_node_completion(struct bpkg_obj* bpkg, size_t node_idx, int* completed_chunks) {
     struct bpkg_query result = {0};
     result.hashes = malloc((bpkg->nhashes + bpkg->nchunks) * sizeof(char*));
