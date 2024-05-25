@@ -398,8 +398,8 @@ struct bpkg_query check_node_completion(struct bpkg_obj* bpkg, size_t node_idx, 
         } else {
             for (size_t i = 0; i < left_result.len; i++) {
                 result.hashes[result.len++] = left_result.hashes[i];
+                free(left_result.hashes[i]);
             }
-            free(left_result.hashes[i]);
         }
 
         if (right_complete) {
@@ -408,8 +408,8 @@ struct bpkg_query check_node_completion(struct bpkg_obj* bpkg, size_t node_idx, 
         } else {
             for (size_t i = 0; i < right_result.len; i++) {
                 result.hashes[result.len++] = right_result.hashes[i];
+                free(right_result.hashes[i]);
             }
-            free(right_result.hashes[i]);
         }
     }
 
